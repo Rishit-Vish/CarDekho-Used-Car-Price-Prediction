@@ -1,303 +1,400 @@
-CarDekho Used Car Price Prediction
+<div align="center">
 
-A machine learning regression project that estimates used car selling prices from vehicle specifications and usage-related features. The project combines exploratory data analysis, data preprocessing, regression model comparison, Random Forest hyperparameter tuning, a FastAPI backend, and an interactive web interface.
+# 🚗 CarDekho Used Car Price Prediction
 
-Overview
+**An end-to-end machine learning project: from raw data to a live prediction API and web interface.**
 
-Used car prices depend on several factors, including vehicle age, kilometres driven, fuel type, transmission, engine capacity, and maximum power. The objective of this project is to learn patterns from historical car listings and estimate the selling price of a vehicle from its available attributes.
+![Python](https://img.shields.io/badge/Python-3.x-3776AB?logo=python&logoColor=white)
+![scikit-learn](https://img.shields.io/badge/scikit--learn-ML-F7931E?logo=scikit-learn&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-Backend-009688?logo=fastapi&logoColor=white)
+![Pydantic](https://img.shields.io/badge/Pydantic-Validation-E92063)
+![Status](https://img.shields.io/badge/Status-Completed-brightgreen)
 
-This project covers the machine learning workflow from dataset exploration and model development to API integration, interactive predictions, and inference validation.
+</div>
 
-Project Highlights
-Performed Exploratory Data Analysis (EDA) to understand feature distributions, relationships, missing values, skewness, and outliers.
-Used SimpleImputer, ColumnTransformer, PowerTransformer, and scikit-learn's Pipeline to organize preprocessing and model training.
-Applied winsorization to cap selected extreme values instead of automatically removing all outliers.
-Compared five regression algorithms using five-fold cross-validation with MAE, RMSE, and R².
-Evaluated Random Forest as the leading candidate and experimented with hyperparameter tuning.
-Saved the trained model using Joblib for reuse during inference.
-Built a FastAPI backend with Pydantic request validation and structured prediction responses.
-Developed an interactive frontend using HTML, CSS, and JavaScript.
-Investigated notebook-to-API prediction inconsistencies by comparing model outputs, inspecting dataset records, and testing multiple vehicle configurations.
-Problem Statement
+---
 
-The goal is to estimate a used car's selling price using its specifications and usage-related features.
+## 📌 Table of Contents
 
-This is a supervised learning regression problem because the model learns from historical examples with known selling prices and predicts a continuous numerical value for a new vehicle.
+- [TL;DR](#-tldr)
+- [Overview](#-overview)
+- [Problem Statement](#-problem-statement)
+- [Dataset](#-dataset)
+- [Project Workflow](#-project-workflow)
+- [Model Comparison](#-model-comparison)
+- [Hyperparameter Tuning](#-random-forest-baseline-and-hyperparameter-tuning)
+- [Why Two Different R² Scores?](#-why-do-i-report-two-different-r-scores)
+- [FastAPI Backend](#-fastapi-backend)
+- [Web Interface](#-interactive-web-interface)
+- [Case Study: Notebook-to-API Mismatch](#-case-study-debugging-a-notebook-to-api-prediction-mismatch)
+- [Tech Stack](#-tech-stack)
+- [Project Structure](#-project-structure)
+- [Installation and Setup](#-installation-and-setup)
+- [Limitations](#-limitations)
+- [Future Improvements](#-future-improvements)
+- [What I Learned](#-what-i-learned)
+- [Author](#-author)
 
-The model provides an estimate based on patterns learned from the training data. It does not guarantee the actual market value of a vehicle.
+---
 
-Dataset
+## ⚡ TL;DR
 
-The dataset was obtained from Kaggle using KaggleHub.
+| | |
+|---|---|
+| **Goal** | Estimate the selling price of a used car from its specifications |
+| **Type** | Supervised learning, regression |
+| **Best model** | Random Forest Regressor |
+| **Cross-validated R²** | **0.864** (5-fold, training data) |
+| **Held-out test R²** | **0.928** (80:20 split) |
+| **Test MAE** | **≈ ₹96,363** (tuned model) |
+| **Deployment** | FastAPI backend + HTML/CSS/JS frontend |
+| **Validation** | Investigated a suspicious API prediction and verified it against the notebook and dataset records |
 
-Dataset: CarDekho Used Car Data
-Download library: KaggleHub
-Target variable: selling_price
+---
 
-The dataset was downloaded using:
+## 📖 Overview
 
+Used car prices depend on several factors: vehicle age, kilometres driven, fuel type, transmission, engine capacity, and maximum power. This project learns those patterns from historical CarDekho listings and uses them to estimate the selling price of a vehicle.
+
+I built the full workflow myself:
+
+1. Exploratory data analysis
+2. Preprocessing with scikit-learn pipelines
+3. Comparison of five regression models
+4. Random Forest tuning
+5. Model serialization
+6. A validated REST API
+7. A web interface for interactive predictions
+8. Inference validation, where I tracked down a suspicious API prediction
+
+### ✨ Project Highlights
+
+- Performed **EDA** on distributions, relationships, missing values, skewness, and outliers.
+- Built a clean preprocessing workflow with `SimpleImputer`, `ColumnTransformer`, `PowerTransformer`, and `Pipeline`.
+- Used **winsorization** to cap extreme values instead of blindly deleting outliers.
+- Compared **5 regression algorithms** using 5-fold cross-validation (MAE, RMSE, R²).
+- Selected **Random Forest** as the leading model and tuned its hyperparameters.
+- Saved the trained pipeline with **Joblib** for reuse at inference time.
+- Built a **FastAPI** backend with **Pydantic** request validation.
+- Developed an interactive frontend using **HTML, CSS, and JavaScript**.
+- Investigated a **notebook-vs-API prediction mismatch** instead of assuming the output was correct ([see case study](#-case-study-debugging-a-notebook-to-api-prediction-mismatch)).
+
+---
+
+## 🎯 Problem Statement
+
+Estimate a used car's selling price from its specifications and usage-related features.
+
+This is a **supervised regression problem**: the model learns from historical listings with known selling prices and predicts a continuous value for a new vehicle.
+
+> ⚠️ The model gives an *estimate* based on patterns in the training data. It does not guarantee the actual market value of a vehicle.
+
+---
+
+## 📊 Dataset
+
+| Property | Details |
+|---|---|
+| **Name** | CarDekho Used Car Data |
+| **Source** | [Kaggle: manishkr1754/cardekho-used-car-data](https://www.kaggle.com/datasets/manishkr1754/cardekho-used-car-data) |
+| **Download method** | KaggleHub |
+| **Target variable** | `selling_price` |
+
+```python
 import kagglehub
 
-path = kagglehub.dataset_download(
-    "manishkr1754/cardekho-used-car-data"
-)
-
+path = kagglehub.dataset_download("manishkr1754/cardekho-used-car-data")
 print("Path to dataset files:", path)
+```
 
-Features
-Feature	Description
-car_name	Name of the car
-brand	Vehicle manufacturer
-model	Car model
-vehicle_age	Age of the vehicle in years
-km_driven	Distance driven
-seller_type	Seller category
-fuel_type	Fuel category
-transmission_type	Transmission category
-mileage	Reported vehicle mileage
-engine	Engine displacement in cc
-max_power	Maximum engine power in bhp
-seats	Seating capacity
-selling_price	Target variable
+### Features
 
-The original dataset also contained an Unnamed: 0 column, which I reviewed during data cleaning because it was not intended to be a predictive feature.
+| Feature | Description |
+|---|---|
+| `car_name` | Name of the car |
+| `brand` | Vehicle manufacturer |
+| `model` | Car model |
+| `vehicle_age` | Age of the vehicle in years |
+| `km_driven` | Distance driven |
+| `seller_type` | Seller category |
+| `fuel_type` | Fuel category |
+| `transmission_type` | Transmission category |
+| `mileage` | Reported vehicle mileage |
+| `engine` | Engine displacement (cc) |
+| `max_power` | Maximum engine power (bhp) |
+| `seats` | Seating capacity |
+| `selling_price` | **Target variable** |
 
-Project Workflow
-1. Exploratory Data Analysis (EDA)
+> The original dataset also had an `Unnamed: 0` column. I reviewed it during cleaning, as it is not a predictive feature.
 
-I explored the dataset to understand its structure, data quality, feature distributions, and relationships before training the models.
+---
 
-The analysis included:
+## 🔄 Project Workflow
 
-Inspecting dataset dimensions, data types, and statistical summaries.
-Checking missing values across columns.
-Examining numerical and categorical feature distributions.
-Analysing skewness in numerical features.
-Exploring correlations between numerical variables.
-Investigating the relationship between vehicle age and selling price.
-Comparing selling-price distributions across fuel types.
-Reviewing unnecessary columns and potential outliers.
+```
+Raw Data → EDA → Cleaning & Preprocessing → Model Comparison → Tuning → Save Model → FastAPI → Web UI → Validation
+```
 
-EDA helped me identify data-quality concerns and understand the characteristics of the dataset before deciding how to prepare it for modelling.
+### 1. Exploratory Data Analysis (EDA)
 
-2. Data Cleaning and Preprocessing
+Before modelling, I explored the dataset to understand its structure, data quality, and relationships:
 
-I separated the input features (X) from the target variable (y) and split the data into training and test sets using an 80:20 split.
+- Dataset dimensions, data types, and statistical summaries
+- Missing values across columns
+- Numerical and categorical feature distributions
+- Skewness in numerical features
+- Correlations between numerical variables
+- Relationship between **vehicle age and selling price**
+- Selling-price distributions across **fuel types**
+- Unnecessary columns and potential outliers
 
-The preprocessing workflow used the following components:
+### 2. Data Cleaning and Preprocessing
 
-SimpleImputer: Handles missing values according to the configured imputation strategy.
-ColumnTransformer: Applies the configured transformations to the appropriate feature groups.
-PowerTransformer: Transforms selected numerical features to help manage skewed distributions.
-Pipeline: Combines preprocessing and model training into one workflow.
+I separated the features (`X`) from the target (`y`) and split the data **80:20** into training and test sets.
 
-Keeping preprocessing inside the pipeline helps ensure that the same fitted transformations are applied during training and inference. During cross-validation, each pipeline is fitted separately within its training fold, helping prevent data leakage when the transformations are configured correctly.
+| Component | Role |
+|---|---|
+| `SimpleImputer` | Handles missing values using the configured strategy |
+| `ColumnTransformer` | Applies the right transformation to each feature group |
+| `PowerTransformer` | Reduces skew in selected numerical features |
+| `Pipeline` | Combines preprocessing and the model into one workflow |
 
-3. Outlier Treatment Using Winsorization
+Keeping preprocessing **inside the pipeline** ensures the same fitted transformations are applied at training and inference time. During cross-validation, each pipeline is fitted separately inside its training fold, which helps prevent data leakage.
 
-I used winsorization to cap selected extreme values instead of automatically removing all outliers.
+### 3. Outlier Treatment with Winsorization
 
-In used-car data, an unusually high selling price may represent a legitimate vehicle rather than an incorrect record. Removing every extreme observation could discard useful information about expensive vehicles.
+I used **winsorization** to cap selected extreme values rather than removing all outliers.
 
-Winsorization provides an alternative by limiting extreme values while retaining observations. However, its effectiveness depends on the selected thresholds, and aggressive caps can also affect legitimate high-value vehicles.
+**Why?** In used-car data, a very high selling price is often a *legitimate* expensive vehicle, not an error. Deleting every extreme row would throw away useful information about premium cars. Winsorization limits their influence while keeping the observations.
 
-4. Regression Model Comparison
+> Trade-off: the result depends on the chosen thresholds, and aggressive caps can affect legitimate high-value vehicles.
 
-I compared five regression algorithms using scikit-learn:
+---
 
-Linear Regression
-Decision Tree Regressor
-Random Forest Regressor
-Gradient Boosting Regressor
-Extra Trees Regressor
+## 🏆 Model Comparison
 
-I used KFold with five splits, shuffling enabled, and random_state=42. Each model was evaluated inside a preprocessing pipeline using cross_validate().
+I compared five regression algorithms from scikit-learn:
 
-Evaluation Metrics
-MAE (Mean Absolute Error): Measures the average absolute difference between actual and predicted prices. Lower values are better.
-RMSE (Root Mean Squared Error): Penalizes larger prediction errors more heavily. Lower values are better.
-R² (Coefficient of Determination): Measures model performance relative to predicting the mean target value. Higher values generally indicate better performance.
+- Linear Regression
+- Decision Tree Regressor
+- Random Forest Regressor
+- Gradient Boosting Regressor
+- Extra Trees Regressor
 
-Scikit-learn returns negative values for its MAE and RMSE scorers. I negated the mean scores to report positive error values.
+**Setup:** `KFold` with 5 splits, shuffling enabled, `random_state=42`. Each model was wrapped in the preprocessing pipeline and evaluated with `cross_validate()`.
 
-Cross-Validation Results
+### Evaluation Metrics
 
-The following values were recorded during model comparison. They represent the mean scores across five validation folds on the training data.
+| Metric | Meaning | Better |
+|---|---|---|
+| **MAE** | Average absolute difference between actual and predicted prices | Lower |
+| **RMSE** | Like MAE, but penalises large errors more heavily | Lower |
+| **R²** | Performance relative to simply predicting the mean price | Higher |
 
-Model	Mean MAE	Mean RMSE	Mean R²
-Random Forest	102,045.23	331,845.03	0.864406
-Extra Trees	103,826.58	341,359.03	0.854563
-Gradient Boosting	127,297.73	360,886.76	0.841845
-Decision Tree	128,486.42	384,922.81	0.822839
-Linear Regression	182,851.16	507,835.63	0.692559
+> scikit-learn returns MAE and RMSE as negative scores. I negated the mean scores to report positive error values.
 
-Random Forest achieved the lowest mean MAE and RMSE and the highest mean R² in this comparison. Based on these results, I selected it as the candidate for further evaluation and hyperparameter tuning.
+### Cross-Validation Results
 
-The error metrics are expressed in the target variable's price unit. The dataset's currency and price scale should be confirmed before interpreting their magnitude.
+Mean scores across 5 validation folds on the **training data**:
 
-5. Random Forest Baseline and Hyperparameter Tuning
+| Rank | Model | Mean MAE | Mean RMSE | Mean R² |
+|:---:|---|---:|---:|---:|
+| 🥇 | **Random Forest** | **102,045.23** | **331,845.03** | **0.8644** |
+| 🥈 | Extra Trees | 103,826.58 | 341,359.03 | 0.8546 |
+| 🥉 | Gradient Boosting | 127,297.73 | 360,886.76 | 0.8418 |
+| 4 | Decision Tree | 128,486.42 | 384,922.81 | 0.8228 |
+| 5 | Linear Regression | 182,851.16 | 507,835.63 | 0.6926 |
 
-After comparing the five models, I evaluated a baseline Random Forest and experimented with hyperparameter tuning to investigate whether adjusting the model configuration could improve performance.
+**Takeaway:** Random Forest achieved the lowest MAE and RMSE and the highest R², so I selected it for further evaluation and tuning. Linear Regression performed noticeably worse, which suggests the price relationship is non-linear.
 
-The baseline pipeline used:
+> Error metrics are in the target's price unit (Indian rupees).
 
+---
+
+## 🔧 Random Forest Baseline and Hyperparameter Tuning
+
+After picking Random Forest, I evaluated a baseline and then experimented with tuning.
+
+```python
 best_pipeline_wo_hpt = Pipeline(steps=[
     ("preprocessor", preprocessor),
     ("model", RandomForestRegressor(random_state=42))
 ])
+```
 
+> Since `n_estimators` was not specified, the baseline used scikit-learn's default of **100 trees**. (The earlier model comparison used 200 trees.)
 
-Because n_estimators was not explicitly specified, this estimator used scikit-learn's default of 100 trees. In the earlier model-comparison experiment, Random Forest was configured with 200 trees.
+### Selected Hyperparameters
 
-Recorded Baseline Results
+| Parameter | Value |
+|---|---:|
+| `n_estimators` | 200 |
+| `max_depth` | 30 |
+| `min_samples_split` | 10 |
+| `min_samples_leaf` | 1 |
 
-The baseline pipeline was fitted on X_train and evaluated on X_test, without cross-validation.
+### Baseline vs Tuned (Held-out Test Set)
 
-Metric	Recorded Baseline Result
-MAE	98,486.40
-RMSE	209,336.60
-R²	0.927927
+Both models were fitted on `X_train` and evaluated on the held-out `X_test`.
 
-The MAE value was originally printed with an MSE label because the code used mean_absolute_error(). The calculation therefore represents MAE, not MSE.
+| Metric | Baseline | After Tuning | Change |
+|---|---:|---:|---:|
+| **MAE** | 98,486.40 | 96,362.88 | ↓ 2,123.52 |
+| **RMSE** | 209,336.60 | 209,230.96 | ↓ 105.64 |
+| **R²** | 0.927927 | 0.928000 | ↑ 0.000073 |
 
-These values are the results recorded during development.
+**Takeaway:** Tuning gave only a **modest** improvement. The baseline Random Forest was already strong, so most of the performance came from the model choice and preprocessing rather than from hyperparameters.
 
-Selected Hyperparameters
+> 📝 *Note: the baseline MAE was originally printed with an "MSE" label in my notebook because the code used `mean_absolute_error()`. The values above are correctly labelled as MAE.*
 
-The recorded tuned configuration was:
+---
 
-Parameter	Value
-n_estimators	200
-min_samples_split	10
-min_samples_leaf	1
-max_depth	30
-Recorded Tuning Results
-Metric	Baseline	After Tuning
-MAE	98,486.40	96,362.88
-RMSE	209,336.60	209,230.96
-R²	0.927927	0.928000
+## ❓ Why Do I Report Two Different R² Scores?
 
-The recorded results show a small reduction in MAE and RMSE and a very small increase in R². This suggests that tuning produced only a modest improvement under the reported evaluation.
+You will see **R² = 0.8644** and **R² = 0.9279** in this README. They are *not* a contradiction. They come from two different evaluation procedures:
 
-Understanding the Different R² Scores
+| | Model Comparison | Baseline Evaluation |
+|---|---|---|
+| **R² reported** | **0.8644** | **0.9279** |
+| **Method** | 5-fold cross-validation | Single train/test split |
+| **Cross-validation?** | ✅ Yes | ❌ No |
+| **Evaluated on** | Validation folds inside `X_train` | Held-out `X_test` |
+| **Hyperparameter tuning?** | No (comparison stage) | Baseline: No / Tuned: Yes |
+| **Number of trees** | 200 | 100 (baseline) |
+| **Purpose** | Fairly compare 5 models | Check how the chosen model performs on unseen data |
 
-The model-comparison results and baseline results were calculated using different evaluation procedures:
+Because the data being scored and the procedure are different, the two numbers should **not** be compared as if they came from the same experiment.
 
-Model comparison: Five-fold cross-validation on X_train, with the reported metrics averaged across the five validation folds.
-Baseline evaluation: The model was fitted on X_train and evaluated on the held-out X_test, without cross-validation.
+- Use the **cross-validation scores** to compare *models against each other*.
+- Use the **held-out test scores** to compare *baseline vs tuned* Random Forest.
 
-Since the evaluation procedures and data being evaluated differ, their R² scores can also differ. The cross-validation R² of 0.864406 and the baseline test R² of 0.927927 are not directly comparable as if they came from the same evaluation.
+> For the most reliable conclusion on tuning, both models should be evaluated on the same test set with identical metric calculations. This is on my improvement list below.
 
-For a reliable comparison of the baseline and tuned models, both should be evaluated on the same held-out test set using identical metric calculations and the same target scale. The reported results can also be reproduced to verify the consistency of the evaluation.
+---
 
-6. Model Serialization
+## ⚙️ FastAPI Backend
 
-I saved the trained model as best_random_forest.pkl using Joblib.
+The backend exposes the trained model through HTTP endpoints. It loads the saved model, converts incoming specifications into a Pandas DataFrame, and returns a prediction.
 
-This allows the backend to load the fitted model for predictions without retraining it for every request.
+### API Endpoints
 
-The saved model contains the fitted preprocessing pipeline, so inference must use the expected feature names and feature ordering.
+| Method | Endpoint | Purpose |
+|:---:|---|---|
+| `GET` | `/options` | Returns supported car names, brands, models, seller types, fuel types, transmission types, and the car catalog |
+| `POST` | `/predict` | Accepts vehicle specifications and returns the predicted selling price |
+| `GET` | `/docs` | Interactive API documentation (Swagger UI) |
 
-FastAPI Backend
+### Input Validation (Pydantic)
 
-I built a FastAPI backend to expose the trained model through HTTP endpoints.
+The `Features` schema validates every request:
 
-The application loads the saved model, converts incoming vehicle specifications into a Pandas DataFrame, and passes the data to the model for prediction.
+- **Required fields and data types** are enforced.
+- `vehicle_age` and `km_driven` must be **non-negative integers**.
+- `mileage` and `max_power` must be **non-negative numbers**.
+- **Categorical fields** (car name, brand, model, seller type, fuel type, transmission type) must belong to the options loaded by the backend.
 
-API Endpoints
-Method	Endpoint	Purpose
-GET	/options	Returns supported car names, brands, models, seller types, fuel types, transmission types, and the car catalog.
-POST	/predict	Accepts vehicle specifications and returns the predicted selling price.
-GET	/docs	Provides interactive API documentation through FastAPI.
-Input Validation
+### Example Response
 
-I used Pydantic to define the prediction request schema.
-
-The Features model validates required fields, data types, and numerical constraints. For example, vehicle age and kilometres driven must be non-negative integers, while mileage and maximum power must be non-negative numbers.
-
-Categorical validators check that car names, brands, models, seller types, fuel types, and transmission types belong to the supported options loaded by the backend.
-
-Prediction Response
-
-A successful prediction returns a response in the following format:
-
+```json
 {
   "predicted_selling_price": 720840.96
 }
+```
 
+The price is expressed in **Indian rupees (₹)**. Unexpected failures are logged with Python's `logging` module, and the API returns a generic HTTP 500 message.
 
-The example illustrates the response structure. The predicted selling price is intended to be expressed in Indian rupees.
+### Backend Modules
 
-The backend also uses Python logging to record unexpected prediction failures and returns a general HTTP 500 error message if a prediction fails.
+| File | Responsibility |
+|---|---|
+| `app.py` | Initialises FastAPI, configures CORS, loads the model, defines endpoints, handles predictions |
+| `Config/config.py` | Loads `final_df.csv`, defines the expected feature order, builds options and catalog |
+| `Schema/schemas.py` | Pydantic request schema and input validators |
+| `Schema/prediction_response.py` | Prediction response schema |
+| `best_random_forest.pkl` | Trained model artifact |
+| `final_df.csv` | Vehicle data used to build the available options |
 
-Backend Modules
-app.py — Initialises FastAPI, configures CORS, loads the model, defines endpoints, and handles prediction requests.
-Config/config.py — Loads final_df.csv, defines the expected feature order, and builds the available vehicle options and catalog.
-Schema/schemas.py — Defines the Pydantic request schema and input validators.
-Schema/prediction_response.py — Defines the prediction response schema.
-best_random_forest.pkl — Stores the trained model artifact.
-final_df.csv — Supplies the vehicle data used to build the backend's available options.
+> The backend uses relative paths for the model and CSV, so the working directory must match the expected file locations.
 
-The backend currently uses relative paths to load the model and CSV, so the working directory and file locations must match the application's expectations.
+---
 
-Interactive Web Interface
+## 🌐 Interactive Web Interface
 
-I built a web interface using HTML, CSS, and JavaScript to make the prediction workflow accessible without manually sending API requests.
+I built a frontend with **HTML, CSS, and JavaScript** so predictions can be made without manually crafting API requests.
 
-The frontend communicates with the FastAPI backend:
+```
+User input (Frontend)  →  FastAPI request validation  →  Fitted ML pipeline  →  Predicted price shown to user
+```
 
-GET /options supplies the available vehicle options.
-POST /predict submits the selected vehicle specifications and receives a prediction.
-The returned selling price can then be displayed to the user.
+- `GET /options` populates the available vehicle options.
+- `POST /predict` submits the selected specifications and returns the estimated price.
 
-The frontend collects the input, FastAPI handles the request, and the fitted pipeline generates the prediction.
+<!-- 📸 Add application screenshots here -->
+<!-- ![App Screenshot](screenshots/app.png) -->
 
-Debugging and Prediction Validation
+---
 
-During testing through FastAPI's interactive documentation, I encountered a prediction that appeared unusually high for the submitted vehicle specifications. I investigated the issue rather than assuming the model output was correct.
+## 🔍 Case Study: Debugging a Notebook-to-API Prediction Mismatch
 
-My checks included:
+> 💡 **Why this matters:** A model can score a high R² in a notebook and still return wrong answers in production if the inference path differs. A successful API response (HTTP 200) does not mean the prediction is correct, so I verified it instead of trusting it.
 
-Comparing predictions from the notebook and the saved model.
-Checking the loaded model path.
-Inspecting matching Maruti Ertiga records in the dataset.
-Comparing submitted specifications with corresponding records.
-Testing ten Ertiga configurations.
-Comparing predictions before and after the changes made during debugging.
-Using logging and direct prediction comparisons to investigate the behaviour.
+While testing through FastAPI's interactive docs, I noticed a prediction that looked **unusually high** for the vehicle I submitted. Instead of assuming the model was right, I investigated.
 
-After the debugging changes, notebook and API predictions agreed for the inputs I tested, and the checked examples produced more reasonable results relative to the corresponding dataset records.
+### What I Checked
 
-The exact root cause of the original mismatch was not conclusively established in my recorded investigation, so I have not attributed it to a specific cause.
+| Step | Purpose |
+|---|---|
+| Compared notebook vs saved-model predictions | Check inference consistency |
+| Verified the loaded model path | Make sure the correct artifact was used |
+| Inspected matching **Maruti Ertiga** records in the dataset | Get a realistic price reference |
+| Compared submitted specs with dataset records | Check input consistency |
+| Tested **10 Ertiga configurations** | Avoid judging from a single example |
+| Compared predictions before and after my changes | Confirm the fix |
+| Used logging and direct prediction comparisons | Trace the behaviour |
 
-This exercise reinforced the importance of checking the inference path, validating input consistency, and testing multiple examples when a prediction appears suspicious.
+### Outcome
 
-Agreement between notebook and API predictions checks inference consistency. Comparing predictions with actual selling prices helps assess prediction error. Neither check alone establishes general performance across every vehicle category.
+After the debugging changes, notebook and API predictions **agreed on all inputs I tested**, and the checked examples were much closer to the corresponding dataset records.
 
-Tech Stack
-Language: Python
-Data Analysis: Pandas, NumPy
-Visualisation: Matplotlib, Seaborn
-Machine Learning: Scikit-learn
-Model Serialization: Joblib
-Dataset Acquisition: KaggleHub
-Backend: FastAPI
-Input Validation: Pydantic
-Frontend: HTML, CSS, JavaScript
-Development Environment: Google Colab
-Project Structure
+> I did not conclusively identify the exact root cause of the original mismatch, so I have not attributed it to any specific cause.
 
-The following structure reflects the backend files supplied for this project. The frontend and notebook paths should match the actual repository.
+### Key Distinction
 
+- **Notebook ↔ API agreement** checks *inference consistency*.
+- **Predictions vs actual prices** checks *prediction error*.
+- Neither check alone proves performance across every vehicle category.
+
+---
+
+## 🛠️ Tech Stack
+
+| Category | Tools |
+|---|---|
+| **Language** | Python |
+| **Data Analysis** | Pandas, NumPy |
+| **Visualisation** | Matplotlib, Seaborn |
+| **Machine Learning** | scikit-learn |
+| **Model Serialization** | Joblib |
+| **Dataset Acquisition** | KaggleHub |
+| **Backend** | FastAPI |
+| **Input Validation** | Pydantic |
+| **Frontend** | HTML, CSS, JavaScript |
+| **Development Environment** | Google Colab |
+
+---
+
+## 📁 Project Structure
+
+```
 CarDekho-Used-Car-Price-Prediction/
-├── app.py
+├── app.py                        # FastAPI application
 ├── Config/
-│   └── config.py
+│   └── config.py                 # Data loading, feature order, options
 ├── Schema/
-│   ├── schemas.py
-│   └── prediction_response.py
-├── best_random_forest.pkl
-├── final_df.csv
+│   ├── schemas.py                # Request schema + validators
+│   └── prediction_response.py    # Response schema
+├── best_random_forest.pkl        # Trained model
+├── final_df.csv                  # Data for backend options
 ├── requirements.txt
 ├── .gitignore
 ├── README.md
@@ -307,83 +404,106 @@ CarDekho-Used-Car-Price-Prediction/
 │   └── script.js
 └── notebooks/
     └── car_price_prediction.ipynb
+```
 
+---
 
-The frontend/ and notebooks/ directories are illustrative and should only be listed if those files exist at those locations.
+## 🚀 Installation and Setup
 
-Installation and Setup
-Prerequisites
-Python
-Git
-Project source code
-The dataset and trained model artifact required by the backend
-1. Clone the Repository
+### Prerequisites
+
+- Python
+- Git
+- The dataset (`final_df.csv`) and trained model (`best_random_forest.pkl`)
+
+### 1. Clone the repository
+
+```bash
 git clone https://github.com/Rishit-Vish/CarDekho-Used-Car-Price-Prediction.git
 cd CarDekho-Used-Car-Price-Prediction
+```
 
-2. Create a Virtual Environment
+### 2. Create a virtual environment
+
+```bash
 python -m venv .venv
+```
 
-
-On Windows:
-
+**Windows**
+```bash
 .venv\Scripts\activate
+```
 
-
-On macOS or Linux:
-
+**macOS / Linux**
+```bash
 source .venv/bin/activate
+```
 
-3. Install Dependencies
+### 3. Install dependencies
+
+```bash
 pip install -r requirements.txt
+```
 
+### 4. Start the FastAPI backend
 
-The requirements file should include the packages needed by the backend and the saved model's preprocessing pipeline.
-
-4. Start the FastAPI Backend
-
-If app.py is in the repository root, run:
-
+```bash
 uvicorn app:app --reload
+```
 
+Open the interactive docs at **http://127.0.0.1:8000/docs**
 
-Open the interactive API documentation at:
+> Make sure `final_df.csv` and `best_random_forest.pkl` are available at the paths the application expects.
 
-http://127.0.0.1:8000/docs
+### 5. Start the frontend
 
-Make sure final_df.csv and best_random_forest.pkl are available at the paths expected by the application.
+Serve the `frontend/` files with a local development server (for example, VS Code Live Server or `python -m http.server`). Make sure the API URL in the frontend points to your running backend. If the frontend and backend run on different origins, CORS must allow the frontend's origin.
 
-5. Start the Frontend
+---
 
-Follow the instructions for the actual frontend files in the repository. If the frontend consists of standalone HTML, CSS, and JavaScript files, serve them using a local development server.
+## ⚠️ Limitations
 
-Ensure that the frontend's API URL points to the running FastAPI backend. If the frontend and backend run on different origins, configure CORS to allow the frontend's origin.
+- Predictions depend on the **quality and coverage** of the training data.
+- Real resale prices also depend on condition, location, service history, and market demand, which are not captured by the features.
+- **Unusual vehicles or price ranges** may be less reliable where similar training examples are scarce.
+- A high R² does not guarantee an accurate prediction for every individual car.
+- Cross-validation and held-out test results come from different procedures and are reported separately.
+- Baseline vs tuned metrics should be reproduced on a common test set before drawing firm conclusions about tuning.
+- The root cause of the original notebook-to-API mismatch was not conclusively documented.
 
-Limitations
-Predictions depend on the quality and coverage of the training data.
-Actual resale prices can vary with vehicle condition, location, service history, market demand, and other factors that may not be represented in the available features.
-Unusual vehicle configurations or price ranges may be less reliable when similar examples are scarce in the training data.
-A high R² does not guarantee accurate predictions for every individual vehicle.
-Cross-validation results and held-out test results come from different evaluation procedures and should be reported separately.
-The baseline and tuned metrics should be reproduced on a common test set before drawing firm conclusions about the improvement from tuning.
-The original notebook-to-API prediction mismatch was investigated, but its exact root cause was not conclusively documented.
-Future Improvements
-Reproduce baseline and tuned evaluation results using identical test data and consistent metric calculations.
-Examine prediction errors across different price ranges and vehicle categories.
-Add feature-importance analysis to understand which attributes contribute most to predictions.
-Add automated tests for API validation and model inference.
-Improve deployment configuration and make the application accessible through a hosted demo.
-Add application screenshots and reproducible evaluation results.
-What I Learned
+---
 
-This project gave me practical experience with the full machine learning workflow, from data exploration and preprocessing to model evaluation, serialization, and API integration.
+## 🔮 Future Improvements
 
-It also taught me that a good evaluation score is only one part of a useful machine learning application. The inference pipeline must receive the expected features, the API must handle inputs correctly, and predictions need to be checked against realistic examples.
+- [ ] Reproduce baseline and tuned results on identical test data with consistent metric calculations
+- [ ] Analyse prediction errors across price ranges and vehicle categories
+- [ ] Add feature-importance analysis
+- [ ] Add automated tests for API validation and model inference
+- [ ] Improve deployment configuration and host a live demo
+- [ ] Add application screenshots and reproducible evaluation results
 
-Investigating the notebook-to-API mismatch was particularly useful because it pushed me to compare the inference paths rather than assuming that a successful API response meant the prediction was correct.
+---
 
-Author
+## 💡 What I Learned
 
-Rishit Vishwakarma
+This project gave me hands-on experience with the full machine learning workflow: data exploration, preprocessing, model evaluation, serialization, and API integration.
 
-GitHub: CarDekho Used Car Price Prediction
+It also taught me that **a good evaluation score is only one part of a useful ML application.** The inference pipeline must receive the expected features, the API must handle inputs correctly, and predictions must be checked against realistic examples.
+
+Investigating the notebook-to-API mismatch was especially valuable. It pushed me to compare inference paths rather than assume that a successful API response meant a correct prediction.
+
+---
+
+## 👤 Author
+
+**Rishit Vishwakarma**
+
+🔗 GitHub: [Rishit-Vish](https://github.com/Rishit-Vish) · [CarDekho Used Car Price Prediction](https://github.com/Rishit-Vish/CarDekho-Used-Car-Price-Prediction)
+
+---
+
+<div align="center">
+
+⭐ If you found this project useful, consider giving it a star!
+
+</div>
