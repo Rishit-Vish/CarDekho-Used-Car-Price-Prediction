@@ -359,4 +359,4 @@ Most importantly, it gave me the opportunity to take a machine learning model be
 
 **Author:** Rishit Vishwakarma
 
-**GitHub:** https://github.com/Rishit-Vish/CarDekho-Used-Car-Price-Prediction.git
+**GitHub:** (https://github.com/Rishit-Vish/CarDekho-Used-Car-Price-Prediction.git)
