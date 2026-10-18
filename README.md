@@ -276,7 +276,7 @@ CarDekho-Price-Prediction/
 ### 1. Clone the Repository
 
 ```bash
-git clone <your-github-repository-url>
+git clone https://github.com/Rishit-Vish/CarDekho-Used-Car-Price-Prediction.git
 cd CarDekho-Price-Prediction
 ```
 
@@ -315,7 +315,6 @@ uvicorn <module_path>:app --reload
 Open the interactive API documentation at:
 
 [http://127.0.0.1:8000/docs]
-(http://127.0.0.1:8000/docs)
 
 ### 5. Open the Frontend
 
@@ -360,4 +359,4 @@ Most importantly, it gave me the opportunity to take a machine learning model be
 
 **Author:** Rishit Vishwakarma
 
-**GitHub:** repo url
+**GitHub:** https://github.com/Rishit-Vish/CarDekho-Used-Car-Price-Prediction.git
