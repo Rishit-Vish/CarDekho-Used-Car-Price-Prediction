@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Used car price estimator</title>
+  <meta name="description" content="Estimate the resale price of a used car in Indian rupees.">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <a class="skip" href="#form">Skip to the form</a>
+
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="./" aria-label="Resale meter, home">
+        <svg viewBox="0 0 32 32" width="30" height="30" aria-hidden="true">
+          <path d="M4 22a12 12 0 1 1 24 0" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/>
+          <path d="M16 22 22 12" stroke="#f6b800" stroke-width="2.8" stroke-linecap="round"/>
+          <circle cx="16" cy="22" r="2.6" fill="#f6b800"/>
+        </svg>
+        <span>Resale meter</span>
+      </a>
+
+      <div class="api">
+        <button id="apiStatus" class="status" type="button" data-state="checking"
+                aria-expanded="false" aria-controls="apiPanel">
+          <span class="status-dot" aria-hidden="true"></span>
+          <span id="apiStatusText">Connecting</span>
+        </button>
+
+        <div id="apiPanel" class="api-panel" hidden>
+          <label for="apiUrl">API address</label>
+          <div class="api-row">
+            <input id="apiUrl" type="url" spellcheck="false" autocomplete="off" placeholder="http://127.0.0.1:8000">
+            <button id="apiSave" class="btn-quiet" type="button">Save and reconnect</button>
+          </div>
+          <p class="hint">Where uvicorn is serving your FastAPI app.</p>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="layout">
+
+    <!-- ============ Left: intro + form ============ -->
+    <div class="left">
+      <div class="intro">
+        <h1>What is your used car worth?</h1>
+        <p class="lede">Enter the car&rsquo;s details and the model estimates its resale price in rupees.</p>
+      </div>
+
+      <div id="optionsError" class="banner banner-error" role="alert" hidden>
+        <div>
+          <strong>Car options could not be loaded</strong>
+          <p id="optionsErrorText"></p>
+        </div>
+        <button id="retryOptions" class="btn-quiet" type="button">Try again</button>
+      </div>
+
+      <div id="catalogNotice" class="banner banner-info" role="status" hidden>
+        <div>
+          <strong>Brand, model and car name are not linked yet</strong>
+          <p>Your <code>/options</code> endpoint sends them as three separate lists, so every option is shown and nothing is filtered. Add a <code>Catalog</code> field to enable the dependent dropdowns.</p>
+          <details>
+            <summary>Show the backend change</summary>
+            <p class="code-title">Config/config.py</p>
+<pre><code>car_catalog = {
+    brand: {
+        model: sorted(cars["car_name"].unique().tolist())
+        for model, cars in brand_df.groupby("model")
+    }
+    for brand, brand_df in df.dropna(
+        subset=["brand", "model", "car_name"]
+    ).groupby("brand")
+}</code></pre>
+            <p class="code-title">app.py, inside get_options()</p>
+<pre><code>"Catalog": car_catalog,</code></pre>
+          </details>
+        </div>
+      </div>
+
+      <form id="form" class="sheet" novalidate>
+
+        <fieldset class="section">
+          <legend>Car</legend>
+          <div class="grid">
+
+            <div class="field combo">
+              <label for="brand">Brand</label>
+              <div class="combo-box">
+                <input id="brand" name="brand" type="text" role="combobox" aria-expanded="false"
+                       aria-controls="brand-list" aria-autocomplete="list" aria-describedby="hint-brand err-brand"
+                       autocomplete="off" spellcheck="false" placeholder="Loading brands" disabled>
+                <button type="button" class="combo-toggle" tabindex="-1" aria-label="Show all brands" disabled>
+                  <svg viewBox="0 0 12 8" width="12" height="8" aria-hidden="true"><path d="m1 1.500 5 5 5-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+                <ul id="brand-list" class="combo-list" role="listbox" aria-label="Brands" hidden></ul>
+              </div>
+              <p class="hint" id="hint-brand"></p>
+              <p class="field-error" id="err-brand" role="alert"></p>
+            </div>
+
+            <div class="field combo">
+              <label for="model">Model</label>
+              <div class="combo-box">
+                <input id="model" name="model" type="text" role="combobox" aria-expanded="false"
+                       aria-controls="model-list" aria-autocomplete="list" aria-describedby="hint-model err-model"
+                       autocomplete="off" spellcheck="false" placeholder="Loading models" disabled>
+                <button type="button" class="combo-toggle" tabindex="-1" aria-label="Show all models" disabled>
+                  <svg viewBox="0 0 12 8" width="12" height="8" aria-hidden="true"><path d="m1 1.500 5 5 5-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+                <ul id="model-list" class="combo-list" role="listbox" aria-label="Models" hidden></ul>
+              </div>
+              <p class="hint" id="hint-model"></p>
+              <p class="field-error" id="err-model" role="alert"></p>
+            </div>
+
+            <div class="field combo wide">
+              <label for="car_name">Car name</label>
+              <div class="combo-box">
+                <input id="car_name" name="car_name" type="text" role="combobox" aria-expanded="false"
+                       aria-controls="car_name-list" aria-autocomplete="list" aria-describedby="hint-car_name err-car_name"
+                       autocomplete="off" spellcheck="false" placeholder="Loading car names" disabled>
+                <button type="button" class="combo-toggle" tabindex="-1" aria-label="Show all car names" disabled>
+                  <svg viewBox="0 0 12 8" width="12" height="8" aria-hidden="true"><path d="m1 1.500 5 5 5-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+                <ul id="car_name-list" class="combo-list" role="listbox" aria-label="Car names" hidden></ul>
+              </div>
+              <p class="hint" id="hint-car_name"></p>
+              <p class="field-error" id="err-car_name" role="alert"></p>
+            </div>
+
+          </div>
+        </fieldset>
+
+        <fieldset class="section">
+          <legend>Seller, fuel and transmission</legend>
+
+          <div class="field">
+            <span class="label" id="seller_type-label">Seller type</span>
+            <div class="chips is-loading" id="seller_type" role="radiogroup" aria-labelledby="seller_type-label" aria-describedby="err-seller_type"></div>
+            <p class="field-error" id="err-seller_type" role="alert"></p>
+          </div>
+
+          <div class="field">
+            <span class="label" id="fuel_type-label">Fuel type</span>
+            <div class="chips is-loading" id="fuel_type" role="radiogroup" aria-labelledby="fuel_type-label" aria-describedby="err-fuel_type"></div>
+            <p class="field-error" id="err-fuel_type" role="alert"></p>
+          </div>
+
+          <div class="field">
+            <span class="label" id="transmission_type-label">Transmission</span>
+            <div class="chips is-loading" id="transmission_type" role="radiogroup" aria-labelledby="transmission_type-label" aria-describedby="err-transmission_type"></div>
+            <p class="field-error" id="err-transmission_type" role="alert"></p>
+          </div>
+        </fieldset>
+
+        <fieldset class="section">
+          <legend>Condition and specifications</legend>
+          <div class="grid">
+
+            <div class="field">
+              <label for="vehicle_age">Vehicle age</label>
+              <div class="num">
+                <input id="vehicle_age" name="vehicle_age" type="number" inputmode="numeric" min="0" step="1" placeholder="4" aria-describedby="err-vehicle_age">
+                <span class="unit">years</span>
+              </div>
+              <p class="field-error" id="err-vehicle_age" role="alert"></p>
+            </div>
+
+            <div class="field">
+              <label for="km_driven">Kilometres driven</label>
+              <div class="num">
+                <input id="km_driven" name="km_driven" type="number" inputmode="numeric" min="0" step="1" placeholder="45000" aria-describedby="hint-km_driven err-km_driven">
+                <span class="unit">km</span>
+              </div>
+              <p class="hint" id="hint-km_driven"></p>
+              <p class="field-error" id="err-km_driven" role="alert"></p>
+            </div>
+
+            <div class="field">
+              <label for="mileage">Mileage</label>
+              <div class="num">
+                <input id="mileage" name="mileage" type="number" inputmode="decimal" min="0" step="any" placeholder="19.5" aria-describedby="err-mileage">
+                <span class="unit">kmpl</span>
+              </div>
+              <p class="field-error" id="err-mileage" role="alert"></p>
+            </div>
+
+            <div class="field">
+              <label for="engine">Engine capacity</label>
+              <div class="num">
+                <input id="engine" name="engine" type="number" inputmode="numeric" min="0" step="1" placeholder="1197" aria-describedby="err-engine">
+                <span class="unit">cc</span>
+              </div>
+              <p class="field-error" id="err-engine" role="alert"></p>
+            </div>
+
+            <div class="field">
+              <label for="max_power">Maximum power</label>
+              <div class="num">
+                <input id="max_power" name="max_power" type="number" inputmode="decimal" min="0" step="any" placeholder="82" aria-describedby="err-max_power">
+                <span class="unit">bhp</span>
+              </div>
+              <p class="field-error" id="err-max_power" role="alert"></p>
+            </div>
+
+            <div class="field">
+              <label for="seats">Seats</label>
+              <div class="num">
+                <input id="seats" name="seats" type="number" inputmode="numeric" min="1" step="1" placeholder="5" aria-describedby="err-seats">
+                <span class="unit">seats</span>
+              </div>
+              <p class="field-error" id="err-seats" role="alert"></p>
+            </div>
+
+          </div>
+        </fieldset>
+
+        <div class="actions">
+          <button id="submitBtn" class="btn-primary" type="submit" disabled>
+            <span class="btn-spinner" aria-hidden="true"></span>
+            <span id="submitText">Predict price</span>
+          </button>
+          <button id="resetBtn" class="btn-quiet" type="button">Clear form</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- ============ Right: the odometer ============ -->
+    <aside class="right">
+      <section class="gauge" id="gauge" data-state="idle" aria-labelledby="gaugeTitle">
+        <h2 id="gaugeTitle">Estimated resale price</h2>
+
+        <div class="odo-well">
+          <div class="odo is-idle" id="odo" aria-hidden="true"></div>
+        </div>
+
+        <div class="readout" aria-live="polite" aria-atomic="true">
+          <p class="sr-only" id="priceText"></p>
+
+          <div class="state state-idle">
+            <p>Fill in the car details and choose Predict price. The estimate appears here.</p>
+          </div>
+
+          <div class="state state-loading">
+            <p>Estimating the resale price</p>
+          </div>
+
+          <div class="state state-done">
+            <p class="approx" id="approx"></p>
+            <p class="car-title" id="carTitle"></p>
+            <ul class="facts" id="facts"></ul>
+            <p class="fine">A model estimate based on past listings. Treat it as a guide, not a quote.</p>
+          </div>
+
+          <div class="state state-error" role="alert">
+            <p class="err-title" id="errTitle">Something went wrong</p>
+            <p id="errBody"></p>
+            <ul id="errList" class="err-list"></ul>
+            <button type="button" id="retryPredict" class="btn-ghost">Try again</button>
+          </div>
+        </div>
+      </section>
+    </aside>
+
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>

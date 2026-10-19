@@ -1,0 +1,15 @@
+# API
+fastapi>=0.110
+uvicorn[standard]>=0.29
+pydantic>=2.6            # field_validator and model_dump need Pydantic v2
+
+# Model loading and inference
+# scikit-learn must match the version best_random_forest.pkl was saved with (1.6.1).
+# Other versions can fail to load it or change its predictions.
+scikit-learn==1.6.1
+joblib>=1.3
+pandas>=2.2              # also reads final_df.csv in Config/config.py
+numpy>=1.26
+
+# The frontend (index.html, style.css, script.js) has no dependencies.
+# Serve it with:  python -m http.server 5500
