@@ -384,9 +384,19 @@ User input (Frontend)  →  FastAPI validation  →  Fitted ML pipeline  →  Pr
 - `GET /options` populates the available vehicle options.
 - `POST /predict` submits the selected specifications and returns the estimated price.
 
-<!-- 📸 Add application screenshots here -->
-<!-- ![App Screenshot](screenshots/app.png) -->
+### 📸 Screenshots
 
+| Home Page | Input Form |
+|:---:|:---:|
+| ![Home](Screenshots/web-ui-heading.png) | ![Input](Screenshots/web-ui-input.png) |
+
+| Filled Form | Prediction Result |
+|:---:|:---:|
+| ![Filled](Screenshots/web-ui-input-2.png) | ![Prediction](Screenshots/web-ui-prediction.png) |
+
+| FastAPI Docs | API Response |
+|:---:|:---:|
+| ![Docs](Screenshots/FastAPI%20docs%20page.png) | ![Response](Screenshots/A%20predict%20response%20in%20Swagger.png) |
 ---
 
 ## 🔍 Case Study: Debugging a Notebook-to-API Prediction Mismatch
