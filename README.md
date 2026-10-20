@@ -419,9 +419,19 @@ User input (Frontend)  →  FastAPI validation  →  Fitted ML pipeline  →  Pr
 
 ### What I Changed
 
-During this investigation I re-ran **hyperparameter tuning** (`RandomizedSearchCV`) and updated the saved model. After that, notebook and API predictions agreed on every input I tested, and the Ertiga examples were much closer to the corresponding dataset records.
+During this investigation I re-ran hyperparameter tuning (RandomizedSearchCV) and updated the saved model, alongside other fixes suggested by an AI assistant. After that, notebook and API predictions agreed on every input I tested.
 
-> I report this as the sequence of events, not as a proven cause. Tuning changed test R² by only 0.000073, which is too small to explain a large prediction error by itself. A notebook-vs-API disagreement also points to the inference path rather than model accuracy, so the true cause may be something else that changed at the same time, such as which model file was loaded.
+I applied some of these changes without fully understanding them at the time, so I cannot name the exact root cause. Tuning changed test R² by only 0.000073, so it is unlikely to be the real fix.
+
+### How I Work Differently Now
+
+| Practice | Why |
+|---|---|
+| Understand every suggested fix before applying it | I can explain my own code and defend my decisions |
+| Change **one thing at a time** | I can tell exactly which change caused which result |
+| Keep a short log of each change and its effect | The cause stays traceable, even weeks later |
+| Test on a fixed set of inputs after each change | Problems are caught immediately, not later |
+
 
 ### What I Could Not Conclude
 
